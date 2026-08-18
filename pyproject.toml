@@ -1,0 +1,12 @@
+[project]
+name = "vo-pt2rpp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pyaaf2>=1.7.1",
+    "pyside6>=6.11.1",
+    "python-reapy>=0.10.0",
+]
