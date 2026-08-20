@@ -40,7 +40,11 @@ class PreferencesManager:
                     },
                     "directories" : {
                         "aaf_path" : "",
-                        "excel_path" : ""
+                        "excel_path" : "",
+                        "reaper_paths" : []
+                    },
+                    "reaper" :{
+                        "failed_restart" : '0'
                     }
                 },
                 file,

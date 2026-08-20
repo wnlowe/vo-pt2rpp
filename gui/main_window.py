@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QLabel, QWidget, QVBoxLayout,
                                QHBoxLayout, QFileDialog, QPushButton, QGroupBox)
 import gui.aaf_widget as aaf_widget
 import gui.excel_widget as excel_widget
+import gui.reaper_widget as reaper_widget
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -23,6 +24,9 @@ class MainWindow(QMainWindow):
 
         excel = excel_widget.ExcelWidget()
         self.main_layout.addWidget(excel)
+
+        reaper = reaper_widget.ReaperWidget()
+        self.main_layout.addWidget(reaper)
 
         self.test = QLabel("Test Text")
         self.main_layout.addWidget(self.test)
