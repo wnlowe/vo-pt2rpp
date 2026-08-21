@@ -39,6 +39,7 @@ class ColumnSelectorRow(QWidget):
         self.hide_column.emit(self.name.text())
 
 class ExcelWidget(QGroupBox):
+    excel_ready = Signal()
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -86,6 +87,8 @@ class ExcelWidget(QGroupBox):
 
         self.get_aligned_columns(0)
 
+        self.excel_ready.emit()
+
     def _configure_column_organizer(self, idx = 0) -> QListWidget:
         widget = QListWidget(supportedDragActions=Qt.DropAction.MoveAction)
         for item in self.column_names[idx]:
@@ -125,6 +128,7 @@ class ExcelWidget(QGroupBox):
             if not row_widget.alignment.currentText() == "None":
                 valid_columns.append((i, row_widget.name.text(), row_widget.alignment.currentText()))
         self.aligned_columns = valid_columns
+
 
     def get_value(self, sheet_idx:int, column: int | str, value: str):
         sheet = self.column_sheets[sheet_idx]

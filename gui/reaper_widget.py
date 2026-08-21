@@ -3,7 +3,7 @@ from unittest import case
 from PySide6.QtWidgets import (QGroupBox, QVBoxLayout, QHBoxLayout, QComboBox,
                                QFileDialog, QPushButton, QMessageBox)
 from PySide6.QtWidgets import QSizePolicy
-from PySide6.QtCore import QTimer, QProcess
+from PySide6.QtCore import QTimer, QProcess, Signal
 import os, sys, time, socket
 from pathlib import Path
 import reapy
@@ -20,6 +20,7 @@ class MinDurationGuard:
         QTimer.singleShot(int(remaining), callback)
 
 class ReaperWidget(QGroupBox):
+    reaper_ready = Signal()
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -55,6 +56,9 @@ class ReaperWidget(QGroupBox):
                 config_path = str(Path.home() / "Library" / "Application Support" / "REAPER")
 
         if config_path in values:
+            if self.configuration_selector.count() == 0:
+                for path in values:
+                    self.configuration_selector.addItem(path)
             return
         elif type(config_path) == str and config_path != "":
             self._add_combo_value(config_path, values)
@@ -72,7 +76,7 @@ class ReaperWidget(QGroupBox):
         values.append(config_path)
         Config.set_value("directories.reaper_paths", values)
 
-    def verify_configuration(self):
+    def verify_configuration(self, v = True):
         self.add_configuration.setEnabled(False)
         self.execute_configuration.setEnabled(False)
         self.execute_configuration.setText("Verifying...")
@@ -81,11 +85,11 @@ class ReaperWidget(QGroupBox):
         match result:
             case 0:
                 self.execute_configuration.setText("Success")
-                guard.run_after(...)
+                guard.run_after(self._ready_execution)
             case 1:
                 guard.run_after(self._need_restart)
             case 2:
-                guard.run_after(self._register_reaper)
+                guard.run_after(lambda: self._register_reaper(True))
 
     def _check_ready(self) -> int:
         import psutil
@@ -111,9 +115,10 @@ class ReaperWidget(QGroupBox):
                 import psutil
                 if any("reaper" in (p.info.get("name") or "").lower()
                        for p in psutil.process_iter(["name"])):
-                    self._need_restart(True)
+                    self._need_restart()
                     return
-                self._register_reaper()
+                self._register_reaper(True)
+                return
             case QMessageBox.StandardButton.Close:
                 import psutil
                 for p in psutil.process_iter(["name", "pid"]):
@@ -130,25 +135,41 @@ class ReaperWidget(QGroupBox):
             QProcess.startDetached("osascript", ["-e", 'tell application "REAPER" to quit'])
         else:
             raise NotImplementedError("Graceful REAPER close not implemented for this platform")
+        self._check_reaper_state(0, self._register_reaper)
 
-    def _check_closed(self, iterations: int):
+
+    def _check_reaper_state(self, iterations: int, on_complete, rpp_open:bool = False, ):
         import psutil
-        if not any("reaper" in (p.info.get("name") or "").lower()
-               for p in psutil.process_iter(["name"])):
-            self._register_reaper()
+        is_running = any("reaper" in (p.info.get("name") or "").lower()
+               for p in psutil.process_iter(["name"]))
+        if is_running == rpp_open:
+            if on_complete:
+                on_complete(True)
             return
         if iterations > 15:
+            if on_complete:
+                on_complete(False)
+            return
+
+        self._reaper_timer = QTimer(singleShot=True, interval=2000)
+        self._reaper_timer.timeout.connect(
+            lambda: self._check_reaper_state(iterations + 1, on_complete, rpp_open)
+        )
+        self._reaper_timer.start()
+
+    def _register_reaper(self, reaper_closed: bool):
+        if reaper_closed:
+            resource_path = self.configuration_selector.currentText()
+            reapy.configure_reaper(resource_path=resource_path)
+            msg = QMessageBox()
+            msg.setText("Reaper has been registered")
+            msg.setInformativeText("You can now start reaper. Press OK when REAPER is running.")
+            msg.exec()
+            self._check_reaper_state(0, self.verify_configuration, True)
+            return
+        else:
             self._rerun()
             return
-        timer = QTimer(singleShot=True, interval=2000)
-        timer.timeout.connect(lambda: self._check_closed(iterations + 1))
-
-    def _register_reaper(self):
-        resource_path = self.configuration_selector.currentText()
-        reapy.configure_reaper(resource_path=resource_path)
-        # Message box to say it is safe to restart reaper now
-        # Take us to activating the execute button
-        ...
 
     def _rerun(self):
         self.execute_configuration.setText("Verify")
@@ -163,3 +184,6 @@ class ReaperWidget(QGroupBox):
             return False
         finally:
             socket.setdefaulttimeout(old_timeout)
+
+    def _ready_execution(self):
+        self.reaper_ready.emit()

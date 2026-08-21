@@ -1,10 +1,12 @@
 from PySide6.QtWidgets import (QWidget, QFileDialog, QVBoxLayout, QPushButton,
                                QHBoxLayout, QLabel, QGroupBox)
 from PySide6.QtGui import QIcon
+from PySide6.QtCore import Signal
 from pathlib import Path
 import aaf_parse as aaf
 
 class AAF_Widget(QGroupBox):
+    aaf_ready = Signal()
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -52,7 +54,8 @@ class AAF_Widget(QGroupBox):
             success = False
         self.display_path.setText(path)
         if success:
-           self.parse_aaf(path)
+            self.parse_aaf(path)
+            self.aaf_ready.emit()
 
     def parse_aaf(self, path):
         output: aaf.AAFSession = aaf.parse_aaf(path, ["4060", "4061", "416", "selects", "alts"])
