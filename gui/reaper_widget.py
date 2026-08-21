@@ -81,7 +81,7 @@ class ReaperWidget(QGroupBox):
         self.execute_configuration.setEnabled(False)
         self.execute_configuration.setText("Verifying...")
         guard = MinDurationGuard(500)
-        result = self._check_ready()
+        result = self._check_ready(v)
         match result:
             case 0:
                 self.execute_configuration.setText("Success")
@@ -91,14 +91,44 @@ class ReaperWidget(QGroupBox):
             case 2:
                 guard.run_after(lambda: self._register_reaper(True))
 
-    def _check_ready(self) -> int:
+    def _check_ready(self, allow_retry) -> int:
         import psutil
         if self._check_reapy():
             return 0
-        if any("reaper" in (p.info.get("name") or "").lower()
-               for p in psutil.process_iter(["name"])):
+        reaper_running = any("reaper" in (p.info.get("name") or "").lower()
+               for p in psutil.process_iter(["name"]))
+        if reaper_running and allow_retry:
+            if self._reaper_troubleshoot():
+                msg = QMessageBox.information(self, "Startup Tip",
+                                              '''With SWS installed you have a "Set Global Startup Action" action
+                                              in your action list. If you already have something here, in your action
+                                              list you can create a custom action to hold multiple actions including
+                                              "activate_reapy_server.py" and set this new custom action to be your
+                                              global startup action. This will allow you to have multiple startup
+                                              actions as long as you add them to your custom action.''')
+                if self._check_reapy():
+                    return 0
+        if reaper_running:
             return 1
         return 2
+
+    def _reaper_troubleshoot(self):
+        msg_1 = QMessageBox()
+        msg_1.setWindowTitle("Troubleshooting")
+        msg_1.setText("It appears REAPER is running, is this true?")
+        msg_1.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        ret = msg_1.exec()
+        if ret == QMessageBox.StandardButton.Yes:
+            msg_2 = QMessageBox()
+            msg_2.setWindowTitle("Startup Action")
+            msg_2.setText('You should now have an action titled "activate_reapy_server.py" in your'
+                          'action list, has that now been run?')
+            msg_2.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            ret_2 = msg_2.exec()
+            if ret_2 == QMessageBox.StandardButton.Yes:
+                return True
+        return False
+
 
     def _need_restart(self):
         msgBox = QMessageBox()
@@ -158,18 +188,23 @@ class ReaperWidget(QGroupBox):
         self._reaper_timer.start()
 
     def _register_reaper(self, reaper_closed: bool):
-        if reaper_closed:
-            resource_path = self.configuration_selector.currentText()
-            reapy.configure_reaper(resource_path=resource_path)
-            msg = QMessageBox()
-            msg.setText("Reaper has been registered")
-            msg.setInformativeText("You can now start reaper. Press OK when REAPER is running.")
-            msg.exec()
-            self._check_reaper_state(0, self.verify_configuration, True)
-            return
-        else:
+        if not reaper_closed:
             self._rerun()
             return
+        try:
+            resource_path = self.configuration_selector.currentText()
+            reapy.configure_reaper(resource_path=resource_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Registration failed", str(e))
+            self._rerun()
+            return
+
+        msg = QMessageBox()
+        msg.setText("Reaper has been registered")
+        msg.setInformativeText("You can now start reaper. Press OK when REAPER is running.")
+        msg.exec()
+        self._check_reaper_state(0, self.verify_configuration, True)
+        return
 
     def _rerun(self):
         self.execute_configuration.setText("Verify")
