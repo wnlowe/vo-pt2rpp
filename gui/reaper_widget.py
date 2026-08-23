@@ -8,12 +8,14 @@ import os, sys, time, socket
 from pathlib import Path
 import reapy
 from preferences_manager import Config
+from log import log, log_func
 
 class MinDurationGuard:
     def __init__(self, min_ms):
         self.min_ms = min_ms
         self.start = time.perf_counter()
 
+    @log_func("print")
     def run_after(self, callback):
         elapsed = (time.perf_counter() - self.start) * 1000
         remaining = max(0, self.min_ms - elapsed)
@@ -24,7 +26,7 @@ class ReaperWidget(QGroupBox):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("Reaper Configuration")
+        self.setTitle("Reaper Configuration")
         self.layout = QVBoxLayout(self)
 
         self.configuration_layout = QHBoxLayout()
@@ -42,6 +44,7 @@ class ReaperWidget(QGroupBox):
 
         self.layout.addLayout(self.configuration_layout)
 
+    @log_func("print")
     def _find_configuration(self, manual = False):
         config_path = ""
         values: list = Config.get_value("directories.reaper_paths")
@@ -69,6 +72,7 @@ class ReaperWidget(QGroupBox):
                 else:
                     continue
 
+    @log_func("print")
     def _add_combo_value(self, config_path: str, values: list):
         self.configuration_selector.addItem(config_path)
         self.configuration_selector.setCurrentText(config_path)
@@ -76,6 +80,7 @@ class ReaperWidget(QGroupBox):
         values.append(config_path)
         Config.set_value("directories.reaper_paths", values)
 
+    @log_func("print")
     def verify_configuration(self, v = True):
         self.add_configuration.setEnabled(False)
         self.execute_configuration.setEnabled(False)
@@ -91,6 +96,7 @@ class ReaperWidget(QGroupBox):
             case 2:
                 guard.run_after(lambda: self._register_reaper(True))
 
+    @log_func("print")
     def _check_ready(self, allow_retry) -> int:
         import psutil
         if self._check_reapy():
@@ -112,6 +118,7 @@ class ReaperWidget(QGroupBox):
             return 1
         return 2
 
+    @log_func("print")
     def _reaper_troubleshoot(self):
         msg_1 = QMessageBox()
         msg_1.setWindowTitle("Troubleshooting")
@@ -129,7 +136,7 @@ class ReaperWidget(QGroupBox):
                 return True
         return False
 
-
+    @log_func("print")
     def _need_restart(self):
         msgBox = QMessageBox()
         msgBox.setText("Reaper Needs to Close")
@@ -158,6 +165,7 @@ class ReaperWidget(QGroupBox):
                 self._rerun()
                 return
 
+    @log_func("print")
     def _close_reaper(self, pid: int):
         if sys.platform == "win32":
             QProcess.startDetached("taskkill", ["/PID", str(pid)])
@@ -167,7 +175,7 @@ class ReaperWidget(QGroupBox):
             raise NotImplementedError("Graceful REAPER close not implemented for this platform")
         self._check_reaper_state(0, self._register_reaper)
 
-
+    @log_func("print")
     def _check_reaper_state(self, iterations: int, on_complete, rpp_open:bool = False, ):
         import psutil
         is_running = any("reaper" in (p.info.get("name") or "").lower()
@@ -187,6 +195,7 @@ class ReaperWidget(QGroupBox):
         )
         self._reaper_timer.start()
 
+    @log_func("print")
     def _register_reaper(self, reaper_closed: bool):
         if not reaper_closed:
             self._rerun()
@@ -206,10 +215,12 @@ class ReaperWidget(QGroupBox):
         self._check_reaper_state(0, self.verify_configuration, True)
         return
 
+    @log_func("print")
     def _rerun(self):
         self.execute_configuration.setText("Verify")
         self.execute_configuration.setEnabled(True)
 
+    @log_func("print")
     def _check_reapy(self, timeout: float = 2.0) -> bool:
         old_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(timeout)
@@ -220,5 +231,6 @@ class ReaperWidget(QGroupBox):
         finally:
             socket.setdefaulttimeout(old_timeout)
 
+    @log_func("print")
     def _ready_execution(self):
         self.reaper_ready.emit()

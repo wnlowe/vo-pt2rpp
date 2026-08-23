@@ -1,6 +1,7 @@
 import json
 import os, sys
 from pathlib import Path
+import tomlkit as toml
 
 class PreferencesManager:
     def __init__(self):
@@ -39,12 +40,18 @@ class PreferencesManager:
                         "hidden" : []
                     },
                     "directories" : {
-                        "aaf_path" : "",
-                        "excel_path" : "",
-                        "reaper_paths" : []
+                        "preferences" : str(self.preferences_file.parent),
+                        "aaf-path" : "",
+                        "excel-path" : "",
+                        "reaper-paths" : []
                     },
                     "reaper" :{
-                        "failed_restart" : '0'
+                        "failed-restart" : '0'
+                    },
+                    "record-modes" : ["Stop-Start", "Pulled Down Selects"],
+                    "selected" : {
+                        "reaper-path" : "",
+                        "record-mode" : ""
                     }
                 },
                 file,
@@ -82,4 +89,24 @@ class PreferencesManager:
 
         self._update_preferences()
 
+class UserSettingsManager:
+    def __init__(self):
+        data_path = Config.get_value("directories.preferences")
+        config_file = Path(data_path) / 'user_preferences.toml'
+        if not config_file.exists():
+            self._initialize_toml(config_file)
+
+    def _initialize_toml(self, path):
+        doc = toml.document()
+
+        aaf = toml.table()
+        aaf.add(toml.comment("""\
+                Welcome to the AAF Config section! If you are editing this manually, to have a new config\
+                create a new entry in this section with the config name as the key and the value is\
+                an array with the content. Just keep it in this table. Tables start with the [section name] format.
+                """))
+        aaf.add(toml.nl())
+        aaf["TNM"] = ["4060", "4061", "416", "selects", "alts"]
+
 Config = PreferencesManager()
+UserConfig = UserSettingsManager()

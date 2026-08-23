@@ -1,16 +1,17 @@
 from PySide6.QtWidgets import (QWidget, QFileDialog, QVBoxLayout, QPushButton,
-                               QHBoxLayout, QLabel, QGroupBox)
+                               QHBoxLayout, QLabel, QGroupBox, QComboBox)
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Signal
 from pathlib import Path
 import aaf_parse as aaf
+from preferences_manager import Config, UserConfig
 
 class AAF_Widget(QGroupBox):
     aaf_ready = Signal()
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("AAF")
+        self.setTitle("AAF")
         self.main_layout = QVBoxLayout(self)
 
         self.select_aaf_button = QPushButton(QIcon("icons/file-headphone.png"), "Select AAF")
@@ -25,6 +26,11 @@ class AAF_Widget(QGroupBox):
 
         self.main_layout.addLayout(self.aaf_selector)
 
+        self._collect_toml()
+        self.config_select = QComboBox()
+        self.config_select.addItems(["None", "New Config..."])
+
+###TEMP?
         self.session = None
         self.track_names = []
         self.track_roles = []
@@ -47,17 +53,25 @@ class AAF_Widget(QGroupBox):
 
 
     def select_aaf(self):
-        path = QFileDialog.getOpenFileName(caption="PT AAF Select", dir=str(Path.home() / "Downloads"), filter="PT AAF (*.aaf)")[0]
+        perf_path = Config.get_value("directories.aaf-path")
+        path = QFileDialog.getOpenFileName(
+            caption="PT AAF Select",
+            dir=str(Path.home() / "Downloads") if perf_path == "" else perf_path,
+            filter="PT AAF (*.aaf)"
+        )[0]
         success = True
         if path == "" or path is None:
             path = "No AAF Selected"
             success = False
         self.display_path.setText(path)
         if success:
-            self.parse_aaf(path)
+            self.process_aaf(path)
             self.aaf_ready.emit()
+            new_path = str(Path(path).parent)
+            if new_path != perf_path:
+                Config.set_value("directories.aaf-path", new_path)
 
-    def parse_aaf(self, path):
+    def process_aaf(self, path):
         output: aaf.AAFSession = aaf.parse_aaf(path, ["4060", "4061", "416", "selects", "alts"])
         self.session = output
         for track in output.tracks:

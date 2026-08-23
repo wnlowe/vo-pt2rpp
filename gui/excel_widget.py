@@ -44,6 +44,7 @@ class ExcelWidget(QGroupBox):
         super().__init__(parent)
 
         self.setTitle("Excel Files")
+        self.setMaximumHeight(500)
         self.main_layout = QVBoxLayout(self)
 
         self.files_select = QHBoxLayout()
@@ -67,10 +68,17 @@ class ExcelWidget(QGroupBox):
         self.aligned_columns = []
 
     def source_files(self):
+        pref_path = Config.get_value("directories.excel-path")
         files = QFileDialog.getOpenFileNames(
-            self, "Open File", str(Path.home() / "Downloads"), filter="Excel files (*.xlsx)"
+            self,
+            "Open File",
+            str(Path.home() / "Downloads") if pref_path == "" else pref_path,
+            filter="Excel files (*.xlsx)"
         )
         self.files = files[0]
+        path = Path(self.files[-1]).parent
+        if path != pref_path:
+            Config.set_value("directories.excel-path", str(path))
         self.display_path.setText(", ".join(files[0]))
         for file in self.files:
             self.column_names.append(excel.read_excel(file))

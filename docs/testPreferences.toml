@@ -1,0 +1,24 @@
+[DEFAULTS]
+
+#Whatever the default is here
+
+[TNM]
+
+path.aaf = ""
+path.excel = ""
+path.reaper = ""
+
+excel.none = ""
+
+aaf.mode = "Pulled Down Selects"
+aaf.identifiers = [
+    "4060",
+    "4061",
+    "416",
+    "selects",
+    "alts"
+]
+
+[WWE]
+
+#WWE Config Here

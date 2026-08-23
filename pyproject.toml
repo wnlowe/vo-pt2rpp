@@ -10,4 +10,5 @@ dependencies = [
     "pyaaf2>=1.7.1",
     "pyside6>=6.11.1",
     "python-reapy>=0.10.0",
+    "tomlkit>=0.15.1",
 ]
