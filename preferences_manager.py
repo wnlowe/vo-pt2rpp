@@ -92,21 +92,58 @@ class PreferencesManager:
 class UserSettingsManager:
     def __init__(self):
         data_path = Config.get_value("directories.preferences")
-        config_file = Path(data_path) / 'user_preferences.toml'
-        if not config_file.exists():
-            self._initialize_toml(config_file)
+        self.config_file = Path(data_path) / 'user_preferences.toml'
+        if not self.config_file.exists():
+            self._initialize_toml(self.config_file)
+
+        self.content = self.get_user_config()
 
     def _initialize_toml(self, path):
         doc = toml.document()
 
-        aaf = toml.table()
-        aaf.add(toml.comment("""\
-                Welcome to the AAF Config section! If you are editing this manually, to have a new config\
-                create a new entry in this section with the config name as the key and the value is\
-                an array with the content. Just keep it in this table. Tables start with the [section name] format.
-                """))
-        aaf.add(toml.nl())
-        aaf["TNM"] = ["4060", "4061", "416", "selects", "alts"]
+        template = toml.table()
+        template.add(toml.nl())
+        template.add(toml.comment("Fill in default search paths for each if desired."))
+        template.add(toml.key(["path", "aaf"]), "")
+        template.add(toml.key(["path", "excel"]), "")
+        template.add(toml.key(["path", "reaper"]), "")
+
+        template.add(toml.nl())
+        template.add(toml.comment(
+        "Add or remove key values as needed. Keys are the dropdown values while the value array are auto"
+        "connect column names. Hidden array is for column names which will not display."
+        ))
+        template.add(toml.key(["excel", "none"]), "")
+        template.add(toml.key(["excel", "filename"]), [''])
+        template.add(toml.key(["excel", "line-text"]), [''])
+        template.add(toml.key(["excel", "character"]), [''])
+        template.add(toml.key(["excel", "select"]), [''])
+
+        template.add(toml.nl())
+        template.add(toml.key(["excel", "hidden"]), [''])
+
+        template.add(toml.nl())
+        template.add(toml.comment(
+        "In the AAF section, mode is the default selection for the record mode dropdown."
+        "Identifiers are strings that will exist in track names which will be pulled out "
+        "for the REAPER import."
+        ))
+        template.add(toml.key(["aaf", "mode"]), 'Stop-Start')
+        template.add(toml.key(["aaf", "identifiers"]), [''])
+        template.add(toml.nl())
+
+        doc["template"] = template
+
+        with open(self.config_file, "w", encoding='utf-8') as file:
+            toml.dump(doc, file)
+
+    def user_config_exists(self):
+        return self.config_file.exists()
+
+    def get_user_config(self):
+        with open(self.config_file, "r", encoding='utf-8') as file:
+            return toml.load(file)
+
 
 Config = PreferencesManager()
 UserConfig = UserSettingsManager()

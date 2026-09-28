@@ -1,6 +1,6 @@
 [DEFAULTS]
 
-#Whatever the default is here
+# Whatever the default is here
 
 [TNM]
 
@@ -9,6 +9,15 @@ path.excel = ""
 path.reaper = ""
 
 excel.none = ""
+excel.filename = ['DLG ID']
+excel.line_text = ['English (United States)']
+excel.character = ['Voice']
+excel.select = ['Rec. Selection']
+excel.takes = ['Rec. Takes']
+excel.updated_line = ['Rec. Text Change']
+excel.record_date = ['Date Recorded']
+
+excel.hidden = []
 
 aaf.mode = "Pulled Down Selects"
 aaf.identifiers = [

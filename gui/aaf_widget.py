@@ -26,7 +26,7 @@ class AAF_Widget(QGroupBox):
 
         self.main_layout.addLayout(self.aaf_selector)
 
-        self._collect_toml()
+        # self._collect_toml()
         self.config_select = QComboBox()
         self.config_select.addItems(["None", "New Config..."])
 

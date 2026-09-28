@@ -47,7 +47,7 @@ class ReaperWidget(QGroupBox):
     @log_func("print")
     def _find_configuration(self, manual = False):
         config_path = ""
-        values: list = Config.get_value("directories.reaper_paths")
+        values: list = Config.get_value("directories.reaper-paths")
         if manual:
             config_path = QFileDialog.getExistingDirectory(None, "Select REAPER Configuration")
         else:
@@ -76,7 +76,7 @@ class ReaperWidget(QGroupBox):
     def _add_combo_value(self, config_path: str, values: list):
         self.configuration_selector.addItem(config_path)
         self.configuration_selector.setCurrentText(config_path)
-        values: list = Config.get_value("directories.reaper_paths")
+        values: list = Config.get_value("directories.reaper-paths")
         values.append(config_path)
         Config.set_value("directories.reaper_paths", values)
 

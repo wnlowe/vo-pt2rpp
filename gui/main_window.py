@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (QMainWindow, QComboBox, QWidget, QVBoxLayout,
 import gui.aaf_widget as aaf_widget
 import gui.excel_widget as excel_widget
 import gui.reaper_widget as reaper_widget
+import gui.preferences_widget as preferences_widget
 from preferences_manager import Config
 import excel_parse as excel
 
@@ -20,6 +21,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
 
         self.main_layout = QVBoxLayout(container)
+
+        self.preferences = preferences_widget.PreferencesWidget()
+        self.main_layout.addWidget(self.preferences)
 
         self.aaf = aaf_widget.AAF_Widget()
         self.main_layout.addWidget(self.aaf)
